@@ -1,17 +1,42 @@
 const express = require('express');
 const app = express();
 
-const server = app.listen(4000, 'localhost', () => {
+//sets up listener on local host and port 3000
+const server = app.listen(3000, '127.0.0.1', () => {
     const addr = server.address();
     console.log('Express started on %s:%s\nPress Ctrl-c to terminate', addr.address, addr.port);
 });
-
+//Importing socket.io and creating connection
 const io = require('socket.io')(server);
 
 let users = [];
 
+const canvasWidth = 800;
+const canvasHeight = 450;
+const offset = 150;
 
-io.on('connection', (skt) => {
+function randomInt(floor, roof) {
+    return (Math.floor(Math.random() * roof)) + floor;
+}
+
+function beginGame() {
+    for (let i in users) {
+        const r = randomInt(0, 256);
+        const g = randomInt(0, 256);
+        const b = randomInt(0, 256);
+
+        users[i].color = 'rgb('+r+ ',' +g+ ',' +b+')';
+        users[i].pos = {
+            x: randomInt(offset, canvasWidth - offset),
+            y: randomInt(offset, canvasHeight - offset)
+        };
+    }
+
+    io.sockets.emit('begin', users);
+}
+
+
+io.on('connection', (skt) => {//Server Side Code for user interaction
     console.log('Made connection to: ' + skt.id);
         
     skt.on('name', (data) => {
@@ -61,7 +86,7 @@ io.on('connection', (skt) => {
             if (io.sockets.sockets[s].ready) {
                 numReady++;
                 if (numReady === users.length) {
-                    io.sockets.emit('begin');
+                    beginGame();
                     break;
                 }
             }
@@ -69,10 +94,14 @@ io.on('connection', (skt) => {
 
     });
 
-    skt.on('disconnect', (reason) => {
+    skt.on('disconnect', (reason) => { //code for when a user disconnects
         if (skt.userName !== '') {
             users.splice(skt.userId, 1);
-            console.log(users);
+
+            io.sockets.emit('dc', {
+                userId: skt.userId,
+                userName: skt.userName
+            });
         }
 
         console.log(skt.id + ' disconnected\n' + reason + '\n');

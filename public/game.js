@@ -1,11 +1,8 @@
-const socket = io.connect('http://localhost:4000');
+const socket = io.connect('localhost:3000');
 console.log(socket);
 const canvas = document.getElementById('canvas');
 const canvasContainer = document.getElementById('canvas-container');
 const ctx = canvas.getContext('2d');
-
-const p1button = document.getElementById('p1');
-const p2button = document.getElementById('p2');
 
 const chatContainer = document.getElementById('chat-container');
 const chat = document.getElementById('chat');
@@ -26,6 +23,7 @@ let userId = -1;
 let userName = '';
 let otherUsers = [];
 let ready = false;
+let gameBegin = false;
 
 function sanitizeUserName(str) {
     const pattern = new RegExp('^\s*([0-9a-zA-Z]+)\s*$');
@@ -35,6 +33,19 @@ function sanitizeUserName(str) {
 function sanitizeMessage(str) {
     const pattern = new RegExp('^\s*([0-9a-zA-Z_ ]+)\s*$');
     return pattern.test(str);
+}
+
+function createPlayer(id, color, pos) {
+    return {
+        id,
+        x: pos.x,
+        y: pos.y,
+        xvel: 0,
+        yvel: 0,
+        vel: 5,
+        color,
+        radius: 25
+    };
 }
 
 nameSubmit.addEventListener('click', (e) => {
@@ -101,76 +112,31 @@ socket.on('ready', (data) => {
     }
 });
 
-socket.on('begin', () => {
+let players = [];
+
+socket.on('begin', (data) => {
     chatContainer.style.display = 'none';
+
+    for (let i in data) {
+        players.push( createPlayer(data[i].id, data[i].color, data[i].pos) );
+    }
+
+    gameBegin = true;
     init();
 });
 
-
-let player1 = {
-    id: 0,
-    x: 50,
-    y: 50,
-    xvel: 0,
-    yvel: 0,
-    vel: 5,
-    color: 'red',
-    radius: 25
-};
-
-let player2 = {
-    id: 1,
-    x: 200,
-    y: 200,
-    xvel: 0,
-    yvel: 0,
-    vel: 5,
-    color: 'blue',
-    radius: 25
-};
-
-let player = {};
-let players = [player1, player2];
-
-p1button.addEventListener('click', (e) => {
-    player = player1;
+socket.on('dc', (data) => {
+    if (gameBegin) {
+        players.splice(data.userId, 1);
+    }
+    const lobbyTag = document.getElementById(data.userName);
+    lobbyTag.parentNode.removeChild(lobbyTag);
 });
 
-p2button.addEventListener('click', (e) => {
-    player = player2;
-});
 
-socket.on('move', (data) => {
-    players[data.id].x = data.x;
-    players[data.id].y = data.y;
-})
-
-function update() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = '#cec8c8';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    player.x += player.xvel;
-    player.y += player.yvel;
-
-    if (player.x) {
-        socket.emit('move', {
-            id: player.id,
-            x: player.x,
-            y: player.y
-        });
-    }
-
-    for (let p in players) {
-        ctx.beginPath();
-        ctx.arc(players[p].x, players[p].y, players[p].radius, 0, 2 * Math.PI);
-        ctx.fillStyle = players[p].color;
-        ctx.fill();
-        ctx.stroke();
-    }
-}
-
-
+// ###############################
+// ########## GAME CODE ##########
+// ###############################
 function init() {
     canvasContainer.style.display = 'block';
     setInterval(update, 1000/30);
@@ -184,33 +150,64 @@ function init() {
     // space -> 32
     window.addEventListener('keydown', (e) => {
         if (e.keyCode === 87) {
-            player.yvel = -player.vel;
+            players[userId].yvel = -players[userId].vel;
         }
         if (e.keyCode === 65) {
-            player.xvel = -player.vel;
+            players[userId].xvel = -players[userId].vel;
         }
         if (e.keyCode === 83) {
-            player.yvel = player.vel;
+            players[userId].yvel = players[userId].vel;
         }
         if (e.keyCode === 68) {
-            player.xvel = player.vel;
+            players[userId].xvel = players[userId].vel;
         }
     });
 
     window.addEventListener('keyup', (e) => {
         if (e.keyCode === 87) {
-            player.yvel = 0;
+            players[userId].yvel = 0;
         }
         if (e.keyCode === 65) {
-            player.xvel = 0;
+            players[userId].xvel = 0;
         }
         if (e.keyCode === 83) {
-            player.yvel = 0;
+            players[userId].yvel = 0;
         }
         if (e.keyCode === 68) {
-            player.xvel = 0;
+            players[userId].xvel = 0;
         }
     });
 }
 
+function update() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#cec8c8';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    players[userId].x += players[userId].xvel;
+    players[userId].y += players[userId].yvel;
+
+    if (players[userId].x) {
+        socket.emit('move', {
+            id: userId,
+            x: players[userId].x,
+            y: players[userId].y
+        });
+    }
+
+    for (let p in players) {
+        ctx.beginPath();
+        ctx.arc(players[p].x, players[p].y, players[p].radius, 0, 2 * Math.PI);
+        ctx.fillStyle = players[p].color;
+        ctx.fill();
+        ctx.stroke();
+    }
+}
+
+socket.on('move', (data) => {
+    players[data.id].x = data.x;
+    players[data.id].y = data.y;
+});
+
+// ###############################
 

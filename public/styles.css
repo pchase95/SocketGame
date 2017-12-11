@@ -56,7 +56,6 @@ h2 {
 #chat {
     width: 600px;
     margin: 30px auto;
-    border: 1px solid #ddd;
     box-shadow: 1px 3px 5px rgba(0,0,0,0.05);
     border-radius: 2px;
 }
@@ -64,15 +63,10 @@ h2 {
 #chat-info {
     position: absolute;
     left: 10.6%;
-    border: 2px solid rgba(80, 83, 250, 0.2);
     width: 17%;
     height: 58.8%;
     margin: 0px;
     text-align: center;
-}
-
-#chat-info li {
-    color: #575ed8;
 }
 
 #display-name {
