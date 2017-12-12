@@ -3,19 +3,15 @@ console.log(socket);
 const canvas = document.getElementById('canvas');
 const canvasContainer = document.getElementById('canvas-container');
 const ctx = canvas.getContext('2d');
-
 const chatContainer = document.getElementById('chat-container');
 const chat = document.getElementById('chat');
 const chatOutput = document.getElementById('chat-output');
 const chatBox = document.getElementById('chat-box');
 const chatSend = document.getElementById('chat-send');
-
 const readyUp = document.getElementById('ready-up');
-
 const nameContainer = document.getElementById('name-container');
 const nameEntry = document.getElementById('name-entry');
 const nameSubmit = document.getElementById('name-submit');
-
 const conPlayers = document.getElementById('con-players');
 const displayName = document.getElementById('display-name');
 
@@ -24,33 +20,13 @@ let userName = '';
 let otherUsers = [];
 let ready = false;
 let gameBegin = false;
-
-function sanitizeUserName(str) {
-    const pattern = new RegExp('^\s*([0-9a-zA-Z]+)\s*$');
-    return pattern.test(str);
-}
-
-function sanitizeMessage(str) {
-    const pattern = new RegExp('^\s*([0-9a-zA-Z_ ]+)\s*$');
-    return pattern.test(str);
-}
-
-function createPlayer(id, color, pos) {
-    return {
-        id,
-        x: pos.x,
-        y: pos.y,
-        xvel: 0,
-        yvel: 0,
-        vel: 5,
-        color,
-        radius: 25
-    };
-}
+const players = [];
+const bullets = [];
+let mousePos = { x: 0.0, y: 0.0 };
 
 nameSubmit.addEventListener('click', (e) => {
     const name = nameEntry.value;
-    if (sanitizeUserName(name)) {
+    if (utils.sanitizeUserName(name)) {
         socket.emit('name', name);
         nameContainer.style.display = 'none';
         chatContainer.style.display = 'block';
@@ -71,7 +47,7 @@ socket.on('newuser', (data) => {
 
 chatSend.addEventListener('click', (e) => {
     const msg = chatBox.value;
-    if (sanitizeMessage(msg)) {
+    if (utils.sanitizeMessage(msg)) {
         socket.emit('chat', msg);
         chatBox.value = '';
     }
@@ -112,13 +88,12 @@ socket.on('ready', (data) => {
     }
 });
 
-let players = [];
 
 socket.on('begin', (data) => {
     chatContainer.style.display = 'none';
 
     for (let i in data) {
-        players.push( createPlayer(data[i].id, data[i].color, data[i].pos) );
+        players.push( new Player(data[i].id, data[i].color, data[i].pos) );
     }
 
     gameBegin = true;
@@ -140,43 +115,11 @@ socket.on('dc', (data) => {
 function init() {
     canvasContainer.style.display = 'block';
     setInterval(update, 1000/30);
-    canvas.width = 800;
-    canvas.height = 450;
 
-    // w -> 87
-    // a -> 65
-    // s -> 83
-    // d -> 68
-    // space -> 32
-    window.addEventListener('keydown', (e) => {
-        if (e.keyCode === 87) {
-            players[userId].yvel = -players[userId].vel;
-        }
-        if (e.keyCode === 65) {
-            players[userId].xvel = -players[userId].vel;
-        }
-        if (e.keyCode === 83) {
-            players[userId].yvel = players[userId].vel;
-        }
-        if (e.keyCode === 68) {
-            players[userId].xvel = players[userId].vel;
-        }
-    });
-
-    window.addEventListener('keyup', (e) => {
-        if (e.keyCode === 87) {
-            players[userId].yvel = 0;
-        }
-        if (e.keyCode === 65) {
-            players[userId].xvel = 0;
-        }
-        if (e.keyCode === 83) {
-            players[userId].yvel = 0;
-        }
-        if (e.keyCode === 68) {
-            players[userId].xvel = 0;
-        }
-    });
+    window.addEventListener('keydown', players[userId].startMove);
+    window.addEventListener('keyup', players[userId].stopMove);
+    canvas.addEventListener('mousemove', utils.setMousePos);
+    canvas.addEventListener('mousedown', players[userId].shoot);
 }
 
 function update() {
@@ -184,30 +127,36 @@ function update() {
     ctx.fillStyle = '#cec8c8';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    players[userId].x += players[userId].xvel;
-    players[userId].y += players[userId].yvel;
+    players[userId].pos.x += players[userId].xvel;
+    players[userId].pos.y += players[userId].yvel;
 
-    if (players[userId].x) {
+    if (players[userId].pos.x) {
         socket.emit('move', {
             id: userId,
-            x: players[userId].x,
-            y: players[userId].y
+            pos: players[userId].pos
         });
     }
 
-    for (let p in players) {
-        ctx.beginPath();
-        ctx.arc(players[p].x, players[p].y, players[p].radius, 0, 2 * Math.PI);
-        ctx.fillStyle = players[p].color;
-        ctx.fill();
-        ctx.stroke();
+    for (let i in players) {
+        players[i].draw();
+    }
+
+    for (let i in bullets) {
+        bullets[i].pos.x += bullets[i].xvel;
+        bullets[i].pos.y += bullets[i].yvel;
+        bullets[i].draw();
+
+        if (!(bullets[i].pos.x > 0 && bullets[i].pos.x <= canvas.width &&
+        bullets[i].pos.y > 0 && bullets[i].pos.y <= canvas.height)) {
+            bullets.splice(i, 1);
+        }
     }
 }
 
 socket.on('move', (data) => {
-    players[data.id].x = data.x;
-    players[data.id].y = data.y;
+    players[data.id].setPos(data.pos);
 });
+
 
 // ###############################
 

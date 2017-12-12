@@ -11,6 +11,7 @@
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
 <title>Socket Shooter</title>
+</head>
 
 <body>
     <div id="name-container">
@@ -41,13 +42,14 @@
     </div>
     
     <div id="canvas-container">
-        <canvas id="canvas"></canvas>>
+        <canvas id="canvas" width="800" height = "450"></canvas>
     </div>
     <br>
 
 
-
     <script src="socket.io.js"></script>
+    <script src="utils.js"></script>
+    <script src="Player.js"></script> 
     <script src="game.js"></script>
 </body>
 </html>

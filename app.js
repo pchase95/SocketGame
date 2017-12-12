@@ -13,7 +13,7 @@ let users = [];
 
 const canvasWidth = 800;
 const canvasHeight = 450;
-const offset = 150;
+const offset = 0;
 
 function randomInt(floor, roof) {
     return (Math.floor(Math.random() * roof)) + floor;
@@ -38,7 +38,6 @@ function beginGame() {
 
 io.on('connection', (skt) => {//Server Side Code for user interaction
     console.log('Made connection to: ' + skt.id);
-        
     skt.on('name', (data) => {
         skt.userId = users.length;
         skt.userName = data;
@@ -82,8 +81,8 @@ io.on('connection', (skt) => {//Server Side Code for user interaction
 
         // check all ready
         let numReady = 0;
-        for (let s in io.sockets.sockets) {
-            if (io.sockets.sockets[s].ready) {
+        for (let i in io.sockets.sockets) {
+            if (io.sockets.sockets[i].ready) {
                 numReady++;
                 if (numReady === users.length) {
                     beginGame();
@@ -106,6 +105,7 @@ io.on('connection', (skt) => {//Server Side Code for user interaction
 
         console.log(skt.id + ' disconnected\n' + reason + '\n');
     });
+    
 });
 
 
