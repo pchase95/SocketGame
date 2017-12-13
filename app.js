@@ -19,6 +19,13 @@ function randomInt(floor, roof) {
     return (Math.floor(Math.random() * roof)) + floor;
 }
 
+function randomCoords() {
+    return {
+        x: randomInt(offset, canvasWidth - offset),
+        y: randomInt(offset, canvasHeight - offset)
+    };
+}
+
 function beginGame() {
     for (let i in users) {
         const r = randomInt(0, 256);
@@ -26,9 +33,10 @@ function beginGame() {
         const b = randomInt(0, 256);
 
         users[i].color = 'rgb('+r+ ',' +g+ ',' +b+')';
+        const coords = randomCoords();
         users[i].pos = {
-            x: randomInt(offset, canvasWidth - offset),
-            y: randomInt(offset, canvasHeight - offset)
+            x: coords.x,
+            y: coords.y
         };
     }
 
@@ -63,11 +71,26 @@ io.on('connection', (skt) => {//Server Side Code for user interaction
         skt.broadcast.emit('move', data);
     });
 
+    skt.on('shoot', (data) => {
+        skt.broadcast.emit('shoot', data);
+    });
+
     skt.on('chat', (data) => {
         io.sockets.emit('chat', {
             msg: data,
             userId: skt.userId,
             userName: skt.userName
+        });
+    });
+
+    skt.on('kill', (data) => {
+        const coords = randomCoords();
+        io.sockets.emit('kill', {
+            id: data,
+            respawnPos: {
+                x: coords.x,
+                y: coords.y
+            }
         });
     });
 

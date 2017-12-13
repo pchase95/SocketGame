@@ -88,12 +88,11 @@ socket.on('ready', (data) => {
     }
 });
 
-
 socket.on('begin', (data) => {
     chatContainer.style.display = 'none';
 
     for (let i in data) {
-        players.push( new Player(data[i].id, data[i].color, data[i].pos) );
+        players.push( new Player(data[i].userId, data[i].color, data[i].pos) );
     }
 
     gameBegin = true;
@@ -127,24 +126,26 @@ function update() {
     ctx.fillStyle = '#cec8c8';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    players[userId].pos.x += players[userId].xvel;
-    players[userId].pos.y += players[userId].yvel;
-
-    if (players[userId].pos.x) {
-        socket.emit('move', {
-            id: userId,
-            pos: players[userId].pos
-        });
-    }
-
     for (let i in players) {
-        players[i].draw();
+        if (userId == i) {
+            players[i].update();
+        } else {
+            players[i].updateNet();
+        }
     }
 
     for (let i in bullets) {
         bullets[i].pos.x += bullets[i].xvel;
         bullets[i].pos.y += bullets[i].yvel;
+
         bullets[i].draw();
+
+        for (let j in players) {
+            if (bullets[i].pos.x >= players[j].pos.x - Player.radius && bullets[i].pos.x <= players[j].pos.x + Player.radius
+            && bullets[i].pos.y >= players[j].pos.y - Player.radius && bullets[i].pos.y <= players[j].pos.y + Player.radius) {
+                socket.emit('kill', j);
+            }
+        }
 
         if (!(bullets[i].pos.x > 0 && bullets[i].pos.x <= canvas.width &&
         bullets[i].pos.y > 0 && bullets[i].pos.y <= canvas.height)) {
@@ -153,10 +154,24 @@ function update() {
     }
 }
 
-socket.on('move', (data) => {
-    players[data.id].setPos(data.pos);
+socket.on('kill', (data) => {
+    players[data.id].setPos(data.respawnPos);
 });
 
+socket.on('move', (data) => {
+    players[data.id].setPos(data.pos);
+    players[data.id].setLineEnd(data.lineEnd);
+});
+
+socket.on('shoot', (data) => {
+    bullets.push(new Bullet(
+        data.id,
+        data.pos,
+        data.playerPos,
+        data.color,
+        data.targetPos
+    ));
+});
 
 // ###############################
 
