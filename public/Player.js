@@ -162,16 +162,6 @@ Player.prototype.draw = function () {
     utils.drawLine(this.pos, this.lineEnd);
 };
 
-Player.prototype.setPos = function (newPos) {
-    this.pos.x = newPos.x;
-    this.pos.y = newPos.y;
-};
-
-Player.prototype.setLineEnd = function (newLineEnd) {
-    this.lineEnd.x = newLineEnd.x;
-    this.lineEnd.y = newLineEnd.y;
-};
-
 Player.prototype.isColliding = function () {
     for (let i in walls) {
         let wall = walls[i];

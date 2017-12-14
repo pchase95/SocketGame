@@ -160,12 +160,12 @@ function update() {
 }
 
 socket.on('kill', (data) => {
-    players[data.id].setPos(data.respawnPos);
+    Object.assign(players[data.id].pos, data.respawnPos);
 });
 
 socket.on('move', (data) => {
-    players[data.id].setPos(data.pos);
-    players[data.id].setLineEnd(data.lineEnd);
+    Object.assign(players[data.id].pos, data.pos);
+    Object.assign(players[data.id].lineEnd, data.lineEnd);
 });
 
 socket.on('shoot', (data) => {
