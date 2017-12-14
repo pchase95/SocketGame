@@ -19,6 +19,13 @@ const utils = {
         return pattern.test(str);
     },
 
+    readJSON(file) {
+        const request = new XMLHttpRequest();
+        request.open('GET', 'map.json', false);
+        request.send(null);
+        return JSON.parse(request.responseText);
+    },
+
     drawCircle(pos, radius) {
         ctx.beginPath();
         ctx.arc(pos.x, pos.y, radius, 0, 2 * Math.PI);
@@ -33,8 +40,12 @@ const utils = {
         ctx.stroke();
     },
 
-    pointDistance(start, end) {
-        return Math.sqrt( Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2) );
+    drawRect(pos, dims) {
+        ctx.fillRect(pos.x, pos.y, dims.width, dims.height);
+    },
+
+    pointDistance(p1, p2) {
+        return Math.sqrt( Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2) );
     },
 
     pointAdd(p1, p2) {

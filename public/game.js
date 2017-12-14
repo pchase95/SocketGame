@@ -14,6 +14,7 @@ const nameEntry = document.getElementById('name-entry');
 const nameSubmit = document.getElementById('name-submit');
 const conPlayers = document.getElementById('con-players');
 const displayName = document.getElementById('display-name');
+const clipCount = document.getElementById('clip-count');
 
 let userId = -1;
 let userName = '';
@@ -22,7 +23,9 @@ let ready = false;
 let gameBegin = false;
 const players = [];
 const bullets = [];
+const walls = [];
 let mousePos = { x: 0.0, y: 0.0 };
+let timer = 0;
 
 nameSubmit.addEventListener('click', (e) => {
     const name = nameEntry.value;
@@ -113,15 +116,23 @@ socket.on('dc', (data) => {
 // ###############################
 function init() {
     canvasContainer.style.display = 'block';
-    setInterval(update, 1000/30);
-
+    
     window.addEventListener('keydown', players[userId].startMove);
     window.addEventListener('keyup', players[userId].stopMove);
     canvas.addEventListener('mousemove', utils.setMousePos);
-    canvas.addEventListener('mousedown', players[userId].shoot);
+    canvas.addEventListener('mousedown', players[userId].startShoot);
+    canvas.addEventListener('mouseup', players[userId].stopShoot);
+
+    const wallSons = utils.readJSON('map.json');
+    for (let i in wallSons) {
+        walls.push(new Wall(wallSons[i]));
+    }
+
+    setInterval(update, 1000/30);
 }
 
 function update() {
+    timer++;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = '#cec8c8';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -135,22 +146,16 @@ function update() {
     }
 
     for (let i in bullets) {
-        bullets[i].pos.x += bullets[i].xvel;
-        bullets[i].pos.y += bullets[i].yvel;
-
-        bullets[i].draw();
-
-        for (let j in players) {
-            if (bullets[i].pos.x >= players[j].pos.x - Player.radius && bullets[i].pos.x <= players[j].pos.x + Player.radius
-            && bullets[i].pos.y >= players[j].pos.y - Player.radius && bullets[i].pos.y <= players[j].pos.y + Player.radius) {
-                socket.emit('kill', j);
-            }
-        }
+        bullets[i].update();
 
         if (!(bullets[i].pos.x > 0 && bullets[i].pos.x <= canvas.width &&
         bullets[i].pos.y > 0 && bullets[i].pos.y <= canvas.height)) {
             bullets.splice(i, 1);
         }
+    }
+
+    for (let i in walls) {
+        walls[i].update();
     }
 }
 
