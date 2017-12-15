@@ -82,6 +82,17 @@ const utils = {
 
     toRadians(angle) {
         return angle / (180 / Math.PI);
+    },
+
+    inRange(value, min, max) {
+        // console.log('Value: ' + value + ', Min: ' + min + ', Max: ' + max);
+        return value >= min && value <= max;
+    },
+
+    isCircleBoxColliding(circle, box) {
+        circle.radius -= 8;
+        return this.inRange(circle.pos.x, box.pos.x - circle.radius, box.pos.x + box.dims.width + circle.radius)
+        && utils.inRange(circle.pos.y, box.pos.y - circle.radius, box.pos.y + box.dims.height + circle.radius);
     }
-    
+
 };

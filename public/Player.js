@@ -15,6 +15,10 @@ function Player(id, color, pos) {
     this.clip = this.clipSize;
     this.reload = 0;
     this.reloadTime = 60; // 2 seconds
+    this.moveLeft = false;
+    this.moveRight = false;
+    this.moveUp = false;
+    this.moveDown = false;
 
     // Functions called from listeners cannot be part of prototype or else
     // this will refer to the window object. This means I can spend extra
@@ -22,16 +26,16 @@ function Player(id, color, pos) {
     // on using call
     this.startMove = (e) => {
         if (e.keyCode === 87) {
-            this.yvel = -this.vel;
+            this.moveUp = true;
         }
         if (e.keyCode === 65) {
-            this.xvel = -this.vel;
+            this.moveLeft = true;
         }
         if (e.keyCode === 83) {
-            this.yvel = this.vel;
+            this.moveDown = true;
         }
         if (e.keyCode === 68) {
-            this.xvel = this.vel;
+           this.moveRight = true;
         }
         if (e.keyCode === 82 && this.clip < 30) {
             this.updateClipCount(true);
@@ -46,16 +50,16 @@ function Player(id, color, pos) {
     // space -> 32
     this.stopMove = (e) => {
         if (e.keyCode === 87) {
-            this.yvel = 0;
+            this.moveUp = false;
         }
         if (e.keyCode === 65) {
-            this.xvel = 0;
+            this.moveLeft = false;
         }
         if (e.keyCode === 83) {
-            this.yvel = 0;
+            this.moveDown = false;
         }
         if (e.keyCode === 68) {
-            this.xvel = 0;
+            this.moveRight = false;
         }
     };
 
@@ -78,11 +82,6 @@ function Player(id, color, pos) {
 Player.radius = 25;
 
 Player.prototype.update = function () {    
-    if (!this.isColliding()) {
-        this.pos.x += this.xvel;
-        this.pos.y += this.yvel;
-    }
-
     const t = this.lineLengh / utils.pointDistance(this.pos, mousePos);
     this.lineEnd.x = ((1 - t) * this.pos.x + t * mousePos.x);
     this.lineEnd.y = ((1 - t) * this.pos.y + t * mousePos.y);
@@ -102,11 +101,35 @@ Player.prototype.update = function () {
         this.clip = this.clipSize;
         this.updateClipCount();
     }
+    if (!this.moveUp && !this.moveDown) {
+        this.yvel = 0;
+    } else {
+        if (this.moveUp) {
+            this.yvel = -this.vel;
+        } else if (this.moveDown) {
+            this.yvel = this.vel;
+        }
+    }
 
-    this.draw();
+    if (!this.moveRight && !this.moveLeft) {
+        this.xvel = 0;
+    } else {
+        if (this.moveLeft) {
+            this.xvel = -this.vel;
+        } else if (this.moveRight) {
+            this.xvel = this.vel;
+        }
+    }
+
+    if (!this.willCollide()) {
+        this.pos.x += this.xvel;
+        this.pos.y += this.yvel;
+    }
+    
     if (this.shooting) {
         this.shoot();
     }
+    this.draw();
 };
 
 Player.prototype.updateClipCount = function (reload) {
@@ -162,15 +185,33 @@ Player.prototype.draw = function () {
     utils.drawLine(this.pos, this.lineEnd);
 };
 
-Player.prototype.isColliding = function () {
+Player.prototype.willCollide = function () {
+    let wall;
+    const newPos = Object.assign({}, this.pos);
+    let newRadius = this.radius;
     for (let i in walls) {
-        let wall = walls[i];
-        if (wall.pos.x < this.pos.x + Player.radius
-        && wall.pos.x + wall.dims.width > this.pos.x - Player.radius
-        && wall.pos.y < this.pos.y + Player.radius
-        && wall.dims.height + wall.pos.y > this.pos.y - Player.radius) {
+        wall = walls[i];
+        
+        if (this.moveUp) {
+            newPos.y -= this.vel;
+        } else if (this.moveDown) {
+            newPos.y += this.vel;
+        }
+
+        if (this.moveLeft) {
+            newPos.x -= this.vel;
+        } else if (this.moveRight) {
+            newPos.x += this.vel;
+        }
+
+
+        if (utils.isCircleBoxColliding({
+            pos: newPos,
+            radius: newRadius
+        }, wall)) {
             return true;
         }
     }
     return false;
 };
+
