@@ -1,7 +1,9 @@
-function Bullet(userId, pos, playerPos, color, targetPos) {
+function Bullet(id, userId, pos, playerPos, color, targetPos) {
+    this.id = id;
     this.userId = userId;
     this.pos = pos;
     this.color = color;
+    this.destroy = false;
     
     this.vel = 15;
     this.radius = 5;
@@ -25,6 +27,7 @@ Bullet.prototype.update = function (index) {
     this.pos.y += this.yvel;
     this.draw();
     this.detectPlayers();
+    this.detectWalls();
 };
 
 Bullet.prototype.detectPlayers = function () {
@@ -33,6 +36,20 @@ Bullet.prototype.detectPlayers = function () {
         && this.pos.y >= players[i].pos.y - Player.radius && this.pos.y <= players[i].pos.y + Player.radius) {
             socket.emit('kill', i);
         }
+    }
+};
+    
+Bullet.prototype.detectWalls = function () {
+    for (let i in walls) {
+        if (this.pos.x >= walls[i].pos.x - walls[i].dims.width && this.pos.x <= walls[i].pos.x + walls[i].dims.width
+        && this.pos.y >= walls[i].pos.y - walls[i].dims.height && this.pos.y <= walls[i].pos.y + walls[i].dims.height) {
+            this.destroy = true;
+        }
+    }
+
+    if (!(this.pos.x > 0 && this.pos.x <= canvas.width
+    && this.pos.y > 0 && this.pos.y <= canvas.height)) {
+        this.destroy = true;
     }
 };
 

@@ -64,12 +64,14 @@ function Player(id, color, pos) {
     };
 
     this.startShoot = (e) => {
-        if (this.clip == 0 && this.reload == 0) {
-            this.reload++;
-            this.updateClipCount(true);
-            return;
+        if (e.button == 0) {
+            if (this.clip == 0 && this.reload == 0) {
+                this.reload++;
+                this.updateClipCount(true);
+                return;
+            }
+            this.shooting = true;
         }
-        this.shooting = true;
     };
     
     
@@ -154,6 +156,7 @@ Player.prototype.shoot = function () {
     if ((timer % 3 == 0 || this.burst == 0) && this.clip > 0 && this.reload == 0) {
         // Object.assign so I can pass by value rather than reference
         const b = new Bullet(
+            bullets.length,
             this.id,
             Object.assign({}, this.lineEnd),
             Object.assign({}, this.pos),
@@ -162,7 +165,8 @@ Player.prototype.shoot = function () {
         );
 
         socket.emit('shoot', {
-            id: this.id,
+            id: bullets.length,
+            playerId: this.id,
             pos: this.lineEnd,
             playerPos: this.pos,
             color: this.color,

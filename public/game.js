@@ -122,6 +122,9 @@ function init() {
     canvas.addEventListener('mousemove', utils.setMousePos);
     canvas.addEventListener('mousedown', players[userId].startShoot);
     canvas.addEventListener('mouseup', players[userId].stopShoot);
+    canvas.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+    });
 
     const wallSons = utils.readJSON('map.json');
     for (let i in wallSons) {
@@ -148,8 +151,7 @@ function update() {
     for (let i in bullets) {
         bullets[i].update();
 
-        if (!(bullets[i].pos.x > 0 && bullets[i].pos.x <= canvas.width &&
-        bullets[i].pos.y > 0 && bullets[i].pos.y <= canvas.height)) {
+        if (bullets[i].destroy) {
             bullets.splice(i, 1);
         }
     }
@@ -171,6 +173,7 @@ socket.on('move', (data) => {
 socket.on('shoot', (data) => {
     bullets.push(new Bullet(
         data.id,
+        data.playerId,
         data.pos,
         data.playerPos,
         data.color,
